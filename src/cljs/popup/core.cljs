@@ -68,13 +68,16 @@
        [(no-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "no")} [:b "NO"]]
        ]]]
    [:div.row
-    [:div.col-md-12
+    [:div.col-md-6
+
+     [:p (scold @doc-state)]]
+     [:div.col-md-1
      [:div.btn-group
      [:button.btn.btn-default {:disabled (incomplete-answers? @doc-state)
                                :on-click #(do
                                            (.log js/console (pr-str @doc-state))
                                            (submit-coding @doc-state))}
       [:b "SUBMIT"]]]
-     [:p (scold @doc-state)]]]])
+     ]]])
 
 (r/render [coding-page] (.getElementById js/document "app"))
