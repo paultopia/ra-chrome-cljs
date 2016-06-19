@@ -8,10 +8,6 @@
 
 (enable-console-print!)
 
-(println "Hello, World!")
-
-
-
 (def doc-state (r/atom
   {:coder "unanswered", :detected-case "unanswered", :input-case "unanswered",
     :mass-tort "unanswered", :cross-border "unanswered", :submitted? false}))
@@ -71,16 +67,6 @@
        [(yes-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "yes")} [:b "YES"]] " "
        [(no-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "no")} [:b "NO"]]
        ]]]
-   [:div.row
-    [:div.col-md-12
-     [:hr]
-     [:h5 "Answers so far:"]
-     [:ul
-     [:li "Coder ID: " (:coder @doc-state)]
-     [:li "Auto-detected case number (UNIQUE ID): " (:detected-case @doc-state)]
-     [:li "Human-suggested case number: " (flag-answer (:input-case @doc-state))]
-     [:li "Is mass tort?: " (flag-answer (:mass-tort @doc-state))]
-     [:li "Is cross-border?: " (flag-answer (:cross-border @doc-state))]]]]
    [:div.row
     [:div.col-md-12
      [:div.btn-group
