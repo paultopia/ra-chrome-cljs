@@ -91,4 +91,11 @@
 
 ;; (r/render [coding-page] (.getElementById js/document "app"))
 
-(load coding-page)
+;; (load coding-page)
+
+(defn test-start-page []
+  [:div
+   [:p "this is a test"]
+   [:button {:on-click #(load coding-page)}]])
+
+(load test-start-page)
