@@ -4,6 +4,8 @@
             [clojure.string :refer[upper-case]]
             [ajax.core :refer [GET POST]]))
 
+(declare test-start-page) ; just a little forward declaration to get rid of an annoying warning
+
 (enable-console-print!)
 
 
@@ -73,7 +75,8 @@
     [:div.col-md-6
 
      [:p (scold @doc-state)]
-[:p (str @doc-state)]
+     [:p (str @doc-state)
+      [:button {:on-click #(load test-start-page)} "test"]]
      ]
      [:div.col-md-1
      [:div.btn-group
@@ -84,18 +87,10 @@
       [:b "SUBMIT"]]]
      ]]])
 
-(def page-state (r/atom coding-page))
-
-(defn page-wrapper []
-  [:div @page-state])
-
-;; (r/render [coding-page] (.getElementById js/document "app"))
-
-;; (load coding-page)
 
 (defn test-start-page []
   [:div
    [:p "this is a test"]
-   [:button {:on-click #(load coding-page)}]])
+   [:button {:on-click #(load coding-page)} "code"]])
 
 (load test-start-page)
