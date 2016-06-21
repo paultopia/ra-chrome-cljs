@@ -90,7 +90,7 @@
 
 (defn test-start-page []
   [:div
-   [:p "this is a test"]
+   [:p "this is a test  Live reloading here! Or not."]
    [:button {:on-click #(load coding-page)} "code"]])
 
 (load test-start-page)
