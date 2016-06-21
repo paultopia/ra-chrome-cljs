@@ -1,12 +1,14 @@
 (ns popup.core
   (:require [reagent.core :as r]
             [reagent.cookies :as coo]
-            [goog.events :as events]
-            [goog.history.EventType :as HistoryEventType]
             [clojure.string :refer[upper-case]]
             [ajax.core :refer [GET POST]]))
 
 (enable-console-print!)
+
+
+(defn load [page]
+  (r/render [page] (.getElementById js/document "app")))
 
 (def doc-state (r/atom
   {:coder "unanswered", :detected-case "unanswered", :input-case "unanswered",
@@ -70,7 +72,9 @@
    [:div.row
     [:div.col-md-6
 
-     [:p (scold @doc-state)]]
+     [:p (scold @doc-state)]
+[:p (str @doc-state)]
+     ]
      [:div.col-md-1
      [:div.btn-group
      [:button.btn.btn-default {:disabled (incomplete-answers? @doc-state)
@@ -80,4 +84,11 @@
       [:b "SUBMIT"]]]
      ]]])
 
-(r/render [coding-page] (.getElementById js/document "app"))
+(def page-state (r/atom coding-page))
+
+(defn page-wrapper []
+  [:div @page-state])
+
+;; (r/render [coding-page] (.getElementById js/document "app"))
+
+(load coding-page)
