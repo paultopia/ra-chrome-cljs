@@ -9,6 +9,7 @@
 (enable-console-print!)
 
 
+
 (defn load [page]
   (r/render [page] (.getElementById js/document "app")))
 
@@ -90,7 +91,7 @@
 
 (defn test-start-page []
   [:div
-   [:p "this is a test  Live reloading here! Or not."]
+   [:p "this is a test  Live reloading here! Now. Maybe."]
    [:button {:on-click #(load coding-page)} "code"]])
 
 (load test-start-page)
