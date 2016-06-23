@@ -2,9 +2,12 @@
   (:require [reagent.core :as r]
             [reagent.cookies :as coo]
             [clojure.string :refer[upper-case]]
+            [taoensso.sente :as sente]
             [ajax.core :refer [GET POST]]))
 
 (declare test-start-page) ; just a little forward declaration to get rid of an annoying warning
+
+(declare test-ws-page)
 
 (enable-console-print!)
 
@@ -92,6 +95,81 @@
 (defn test-start-page []
   [:div
    [:p "this is a test  Live reloading here! Now. Maybe."]
-   [:button {:on-click #(load coding-page)} "code"]])
+   [:button {:on-click #(load coding-page)} "code"]
+   [:p "new button!" ]
+   [:button {:on-click #(load test-ws-page)} "code"]])
 
 (load test-start-page)
+
+
+;; this stuff below will be refactored into separate ns once I verify it works.
+
+(let [connection (sente/make-channel-socket! "/ws" {:type :auto :host "localhost:3000"})]
+  (def ch-chsk (:ch-recv connection))    ; ChannelSocket's receive channel
+  (def send-message! (:send-fn connection)))
+
+(defn state-handler [{:keys [?data]}]
+  (.log js/console (str "state changed: " ?data)))
+
+(defn handshake-handler [{:keys [?data]}]
+  (.log js/console (str "connection established: " ?data)))
+
+(defn default-event-handler [ev-msg]
+  (.log js/console (str "Unhandled event: " (:event ev-msg))))
+
+(defn event-msg-handler [& [{:keys [message state handshake]
+                             :or {state state-handler
+                                  handshake handshake-handler}}]]
+  (fn [ev-msg]
+    (case (:id ev-msg)
+      :chsk/handshake (handshake ev-msg)
+      :chsk/state (state ev-msg)
+      :chsk/recv (message ev-msg)
+      (default-event-handler ev-msg))))
+
+(def router (atom nil))
+
+(defn stop-router! []
+  (when-let [stop-f @router] (stop-f)))
+
+(defn start-router! [message-handler]
+  (stop-router!)
+  (reset! router (sente/start-chsk-router!
+                   ch-chsk
+                   (event-msg-handler
+                     {:message   message-handler
+                      :state     state-handler
+                      :handshake handshake-handler}))))
+
+(defn errors-component [errors id]
+  (when-let [error (id @errors)]
+    [:div.alert.alert-danger (clojure.string/join error)]))
+
+(defn response-handler [messages errors]
+  (fn [{[_ message] :?data}]
+    (if-let [response-errors (:errors message)]
+      (reset! errors response-errors)
+      (do
+        (reset! errors nil)
+        (reset! messages message)))))
+
+(defn message-button [errors]
+  [:div.container
+   [:div.row
+    [:div.col-md-12
+     [errors-component errors :message]
+     [:button.btn.btn-default
+      {:on-click #(send-message! [:rawebsite/wstest 1] 8000)} "Send 1 to server"]]]])
+
+(defn test-ws-page []
+  (let [messages (r/atom nil)
+        errors   (r/atom nil)
+        fields   (r/atom nil)]
+    (start-router! (response-handler messages errors))
+    (fn []
+      [:div.container
+       [:div.row
+        [:div.col-md-12
+         (str @messages)]
+        [:div.col-md-12
+         [message-button errors]]]])))

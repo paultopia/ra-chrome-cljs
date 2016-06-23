@@ -9,6 +9,7 @@
                  [cljs-ajax "0.5.5"]
                  [reagent-utils "0.1.8"]
                  [reagent "0.6.0-rc"]
+                 [com.taoensso/sente "1.8.1"] 
                  [reagent-forms "0.5.24"]])
 
 (require '[adzerk.boot-cljs :refer [cljs]]
