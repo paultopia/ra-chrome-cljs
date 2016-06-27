@@ -39,10 +39,10 @@
 
 (defn scold [answermap]
   (if (incomplete-answers? answermap)
-    [:i "All questions must be answered, and you must be logged in, to submit."[:br] "You can change answers just by pressing a different button/entering different data."]
+    [:span {:style {:font-size "smaller"}} "All questions must be answered, and you must be logged in, to submit. You can change answers just by pressing a different button/entering different data."]
     (if (:submitted? @doc-state)
-     [:b "You can close the window now."]
-     [:i "Please " [:span {:style {"color" "red"}} [:b "make sure your answers are correct "]] "before submitting." [:br] "You can change answers just by pressing a different button/entering different data."])))
+      [:span {:style {:font-size "smaller"}} "You can close the window now."]
+      [:span {:style {:font-size "smaller"}} "Please " [:span {:style {"color" "red"}} [:b "make sure your answers are correct "]] "before submitting. You can change answers just by pressing a different button/entering different data."])))
 
 (defn submit-coding [answermap]
   (POST "/submit" {:params @doc-state
@@ -93,9 +93,9 @@
      [word-question "Enter your last name" :coder]
      [word-question "What is the case number?" :input-case]
      [word-question "How many plaintiffs are there?" :number-plaintiffs]
-     [button-binary "Does one (or more) of the parties appear to be a foreign (non-USA) government?" :foreign-govt-party]
-     [button-binary "Does one (or more) of the parties appear to be a foreign corporation?" :foreign-corp-party]
-     [button-binary "Does it appear that the case clearly was originally filed in a foreign court?" :filed-elsewhere]]]
+     [button-binary "Are any of the parties foreign government(s)?" :foreign-govt-party]
+     [button-binary "Are any of the parties foreign corporation(s)?" :foreign-corp-party]
+     [button-binary "Was the case originally filed in a foreign court?" :filed-elsewhere]]]
    [submission-form]])
 
 
