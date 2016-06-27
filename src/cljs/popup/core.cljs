@@ -68,10 +68,11 @@
    [:input {:on-change #(update-doc valholder (-> % .-target .-value))}]])
 
 (defn button-binary [prompt valholder]
-  [:p prompt]
+  [:div
+   [:p prompt]
   [:ButtonToolbar {:field :multi-select}
    [(yes-button (valholder @doc-state)) {:on-click #(update-doc valholder "yes")} [:b "YES"]] " "
-   [(no-button (valholder @doc-state)) {:on-click #(update-doc valholder "no")} [:b "NO"]]])
+   [(no-button (valholder @doc-state)) {:on-click #(update-doc valholder "no")} [:b "NO"]]]])
 
 (defn submission-form []
   [:div.row
