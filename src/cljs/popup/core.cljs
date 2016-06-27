@@ -1,8 +1,8 @@
 (ns popup.core
   (:require [reagent.core :as r]
             [reagent.cookies :as coo]
-            [clojure.string :refer[upper-case]]
-            [taoensso.sente :as sente]
+            [clojure.string :refer [upper-case]]
+            [popup.ws :refer [start-router! send-message! response-handler errors-component]]
             [ajax.core :refer [GET POST]]))
 
 (declare test-start-page) ; just a little forward declaration to get rid of an annoying warning
@@ -16,9 +16,15 @@
 (defn load [page]
   (r/render [page] (.getElementById js/document "app")))
 
-(def doc-state (r/atom
-  {:coder "unanswered", :detected-case "unanswered", :input-case "unanswered",
-    :mass-tort "unanswered", :cross-border "unanswered", :submitted? false}))
+(def doc-state
+  (r/atom
+   {:coder "unanswered", :detected-case "missing", :input-case "unanswered",
+    :number-plaintiffs "unanswered", :foreign-govt-party "unanswered",
+    :foreign-corp-party "unanswered", :filed-elsewhere "unanswered"}))
+
+;; (def old-doc-state (r/atom
+;;  {:coder "unanswered", :detected-case "unanswered", :input-case "unanswered",
+;;    :mass-tort "unanswered", :cross-border "unanswered", :submitted? false}))
 
 (defn update-doc [k v]
   (swap! doc-state assoc k v))
@@ -57,39 +63,74 @@
     :button.btn.btn-default
     ))
 
-(defn coding-page []
-  [:div.container
-    [:div.row
-      [:div.col-md-12
-        [:p "What is the case number? "
-         [:input {:on-change #(update-doc :input-case (-> % .-target .-value))}]] ]]
-    [:div.row
-      [:div.col-md-4
-       [:b "Is this a MASS TORT?" [:br]]
-       [:ButtonToolbar {:field :multi-select}
-        [(yes-button (:mass-tort @doc-state)) {:on-click #(update-doc :mass-tort "yes")} [:b "YES"]] " "
-        [(no-button (:mass-tort @doc-state)) {:on-click #(update-doc :mass-tort "no")} [:b "NO"]]]]
-      [:div.col-md-5
-       [:b "Is this a CROSS-BORDER case?" [:br]]
-       [:ButtonToolbar {:field :multi-select}
-       [(yes-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "yes")} [:b "YES"]] " "
-       [(no-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "no")} [:b "NO"]]
-       ]]]
-   [:div.row
-    [:div.col-md-6
+(defn word-question [prompt valholder]
+  [:p (str prompt " ")
+   [:input {:on-change #(update-doc valholder (-> % .-target .-value))}]])
 
-     [:p (scold @doc-state)]
-     [:p (str @doc-state)
-      [:button {:on-click #(load test-start-page)} "test"]]
-     ]
-     [:div.col-md-1
-     [:div.btn-group
+(defn button-binary [prompt valholder]
+  [:p prompt]
+  [:ButtonToolbar {:field :multi-select}
+   [(yes-button (valholder @doc-state)) {:on-click #(update-doc valholder "yes")} [:b "YES"]] " "
+   [(no-button (valholder @doc-state)) {:on-click #(update-doc valholder "no")} [:b "NO"]]])
+
+(defn submission-form []
+  [:div.row
+   [:div.col-md-6
+    [:p (scold @doc-state)]]
+   [:div.col-md-1
+    [:div.btn-group
      [:button.btn.btn-default {:disabled (incomplete-answers? @doc-state)
                                :on-click #(do
-                                           (.log js/console (pr-str @doc-state))
-                                           (submit-coding @doc-state))}
-      [:b "SUBMIT"]]]
-     ]]])
+                                            (.log js/console (pr-str @doc-state))
+                                            (submit-coding @doc-state))}
+      [:b "SUBMIT"]]]]])
+
+(defn coding-page []
+  [:div.container
+   [:div.row
+    [:div.col-md-12
+     [word-question "Enter your last name" :coder]
+     [word-question "What is the case number?" :input-case]
+     [word-question "How many plaintiffs are there?" :number-plaintiffs]
+     [button-binary "Does one (or more) of the parties appear to be a foreign (non-USA) government?" :foreign-govt-party]
+     [button-binary "Does one (or more) of the parties appear to be a foreign corporation?" :foreign-corp-party]
+     [button-binary "Does it appear that the case clearly was originally filed in a foreign court?" :filed-elsewhere]]]
+   [submission-form]])
+
+
+
+;; ;; (defn old-coding-page []
+;;   ;; [:div.container
+;;     ;; [:div.row
+;;     ;;   [:div.col-md-12
+;;     ;;     [:p "What is the case number? "
+;;          [:input {:on-change #(update-doc :input-case (-> % .-target .-value))}]] ]]
+;;     [:div.row
+;;       [:div.col-md-4
+;;        [:b "Is this a MASS TORT?" [:br]]
+;;        [:ButtonToolbar {:field :multi-select}
+;;         [(yes-button (:mass-tort @doc-state)) {:on-click #(update-doc :mass-tort "yes")} [:b "YES"]] " "
+;;         [(no-button (:mass-tort @doc-state)) {:on-click #(update-doc :mass-tort "no")} [:b "NO"]]]]
+;;       [:div.col-md-5
+;;        [:b "Is this a CROSS-BORDER case?" [:br]]
+;;        [:ButtonToolbar {:field :multi-select}
+;;        [(yes-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "yes")} [:b "YES"]] " "
+;;        [(no-button (:cross-border @doc-state)) {:on-click #(update-doc :cross-border "no")} [:b "NO"]]
+;;        ]]]
+;;    [:div.row
+;;     [:div.col-md-6
+     ;; [:p (scold @doc-state)]
+     ;; [:p (str @doc-state)
+     ;;  [:button {:on-click #(load test-start-page)} "test"]]
+     ;; ]
+     ;; [:div.col-md-1
+     ;; [:div.btn-group
+     ;; [:button.btn.btn-default {:disabled (incomplete-answers? @doc-state)
+     ;;                           :on-click #(do
+     ;;                                       (.log js/console (pr-str @doc-state))
+     ;;                                       (submit-coding @doc-state))}
+     ;;  [:b "SUBMIT"]]]
+     ;; ]]])
 
 
 (defn test-start-page []
@@ -103,55 +144,6 @@
 
 
 ;; this stuff below will be refactored into separate ns once I verify it works.
-
-(let [connection (sente/make-channel-socket! "/ws" {:type :auto :host "localhost:3000"})]
-  (def ch-chsk (:ch-recv connection))    ; ChannelSocket's receive channel
-  (def send-message! (:send-fn connection)))
-
-(defn state-handler [{:keys [?data]}]
-  (.log js/console (str "state changed: " ?data)))
-
-(defn handshake-handler [{:keys [?data]}]
-  (.log js/console (str "connection established: " ?data)))
-
-(defn default-event-handler [ev-msg]
-  (.log js/console (str "Unhandled event: " (:event ev-msg))))
-
-(defn event-msg-handler [& [{:keys [message state handshake]
-                             :or {state state-handler
-                                  handshake handshake-handler}}]]
-  (fn [ev-msg]
-    (case (:id ev-msg)
-      :chsk/handshake (handshake ev-msg)
-      :chsk/state (state ev-msg)
-      :chsk/recv (message ev-msg)
-      (default-event-handler ev-msg))))
-
-(def router (atom nil))
-
-(defn stop-router! []
-  (when-let [stop-f @router] (stop-f)))
-
-(defn start-router! [message-handler]
-  (stop-router!)
-  (reset! router (sente/start-chsk-router!
-                   ch-chsk
-                   (event-msg-handler
-                     {:message   message-handler
-                      :state     state-handler
-                      :handshake handshake-handler}))))
-
-(defn errors-component [errors id]
-  (when-let [error (id @errors)]
-    [:div.alert.alert-danger (clojure.string/join error)]))
-
-(defn response-handler [messages errors]
-  (fn [{[_ message] :?data}]
-    (if-let [response-errors (:errors message)]
-      (reset! errors response-errors)
-      (do
-        (reset! errors nil)
-        (reset! messages message)))))
 
 (defn message-button [errors]
   [:div.container
