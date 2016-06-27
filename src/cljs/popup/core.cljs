@@ -20,11 +20,7 @@
   (r/atom
    {:coder "unanswered", :detected-case "missing", :input-case "unanswered",
     :number-plaintiffs "unanswered", :foreign-govt-party "unanswered",
-    :foreign-corp-party "unanswered", :filed-elsewhere "unanswered"}))
-
-;; (def old-doc-state (r/atom
-;;  {:coder "unanswered", :detected-case "unanswered", :input-case "unanswered",
-;;    :mass-tort "unanswered", :cross-border "unanswered", :submitted? false}))
+    :foreign-corp-party "unanswered", :filed-elsewhere "unanswered" :submitted? false}))
 
 (defn update-doc [k v]
   (swap! doc-state assoc k v))
@@ -44,10 +40,16 @@
       [:span {:style {:font-size "smaller"}} "You can close the window now."]
       [:span {:style {:font-size "smaller"}} "Please " [:span {:style {"color" "red"}} [:b "make sure your answers are correct "]] "before submitting. You can change answers just by pressing a different button/entering different data."])))
 
+(defn test-submit [answermap]
+  (do
+    (update-doc :submitted? true)
+    (coo/set! :coder (:coder @doc-state))))
+
 (defn submit-coding [answermap]
   (POST "/submit" {:params @doc-state
                    :handler #(do
-                              (update-doc :submitted? true)
+                               (update-doc :submitted? true)
+                               (coo/set! :coder (:coder @doc-state))
                               (.log js/console (str "response: " %)))
                    :error-handler #(.log js/console (str "error: " %))}))
 
@@ -65,10 +67,11 @@
 
 (defn word-question [prompt valholder]
   [:p (str prompt " ")
-   [:input {:on-change #(update-doc valholder (-> % .-target .-value))}]])
+   [:input {:placeholder (valholder @doc-state) :on-change #(update-doc valholder (-> % .-target .-value))}]])
 
 (defn button-binary [prompt valholder]
   [:div
+   [:hr]
    [:p prompt]
   [:ButtonToolbar {:field :multi-select}
    [(yes-button (valholder @doc-state)) {:on-click #(update-doc valholder "yes")} [:b "YES"]] " "
@@ -83,14 +86,14 @@
      [:button.btn.btn-default {:disabled (incomplete-answers? @doc-state)
                                :on-click #(do
                                             (.log js/console (pr-str @doc-state))
-                                            (submit-coding @doc-state))}
+                                            (test-submit @doc-state))}  ; replace with submit-coding to get communication in.  this is just to test cookies.
       [:b "SUBMIT"]]]]])
 
 (defn coding-page []
   [:div.container
    [:div.row
     [:div.col-md-12
-     [word-question "Enter your last name" :coder]
+     [word-question "Enter your last name." :coder]
      [word-question "What is the case number?" :input-case]
      [word-question "How many plaintiffs are there?" :number-plaintiffs]
      [button-binary "Are any of the parties foreign government(s)?" :foreign-govt-party]
@@ -140,6 +143,8 @@
    [:button {:on-click #(load coding-page)} "code"]
    [:p "new button!" ]
    [:button {:on-click #(load test-ws-page)} "code"]])
+
+(update-doc :coder (coo/get :coder "unanswered"))
 
 (load test-start-page)
 
